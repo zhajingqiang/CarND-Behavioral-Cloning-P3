@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import cv2
 from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 from PIL import Image
 # import tensorflow as tf 
 def generator(samples, batch_size=32):
@@ -32,7 +33,7 @@ def generator(samples, batch_size=32):
             # trim image to only see section with road
             X_train = np.array(images)
             y_train = np.array(angles)
-            yield sklearn.utils.shuffle(X_train, y_train)
+            yield shuffle(X_train, y_train)
 
 #read data 
 in_file = 'data/driving_log.csv'
