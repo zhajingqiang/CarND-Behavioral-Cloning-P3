@@ -87,7 +87,7 @@ model.add(Activation('relu'))
 model.add(Dense(1))
 
 model.compile(optimizer=Adam(lr=1e-4), loss='mse')
-history = model.fit(X_train, y_train,  batch_size=32, nb_epoch=2, validation_split=0.2)
+history = model.fit(X_train, y_train,  batch_size=32, nb_epoch=10, validation_split=0.2)
 model.save_weights('./model.h5')
 json_string = model.to_json()
 with open("model.json", "w") as json_file:
