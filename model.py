@@ -10,9 +10,29 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt 
 import cv2
+from sklearn.model_selection import train_test_split
 from PIL import Image
 # import tensorflow as tf 
+def generator(samples, batch_size=32):
+    num_samples = len(samples)
+    while 1: # Loop forever so the generator never terminates
+        shuffle(samples)
+        for offset in range(0, num_samples, batch_size):
+            batch_samples = samples[offset:offset+batch_size]
 
+            images = []
+            angles = []
+            for batch_sample in batch_samples:
+                name = 'data/'+batch_sample[0]
+                center_image = Image.open(name)
+                center_angle = float(batch_sample[3])
+                images.append(center_image)
+                angles.append(center_angle)
+
+            # trim image to only see section with road
+            X_train = np.array(images)
+            y_train = np.array(angles)
+            yield sklearn.utils.shuffle(X_train, y_train)
 
 #read data 
 in_file = 'data/driving_log.csv'
@@ -20,6 +40,10 @@ full_data = pd.read_csv(in_file)
 image_names = full_data['center']
 steer_data = full_data['steering']
 image_first = np.array(Image.open("data/" + image_names[0]))
+train_samples, validation_samples = train_test_split(full_data, test_size=0.2)
+train_generator = generator(train_samples)
+valid_generator = generator(valid_samples)
+
 # plt.imshow(image_first)
 # plt.show()
 # print(image_first.shape)
@@ -87,7 +111,8 @@ model.add(Activation('relu'))
 model.add(Dense(1))
 
 model.compile(optimizer=Adam(lr=1e-4), loss='mse')
-history = model.fit(X_train, y_train,  batch_size=32, nb_epoch=10, validation_split=0.2)
+# history = model.fit(X_train, y_train,  batch_size=32, nb_epoch=10, validation_split=0.2)
+history = model.fit_generator(train_generator, samples_per_epoch=len(train_samples), validation_data=validation_generator, nb_val_samples=len(validation_samples), nb_epoch=10)
 model.save_weights('./model.h5')
 json_string = model.to_json()
 with open("model.json", "w") as json_file:
