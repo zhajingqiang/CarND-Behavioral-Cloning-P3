@@ -20,9 +20,9 @@ full_data = pd.read_csv(in_file)
 image_names = full_data['center']
 steer_data = full_data['steering']
 image_first = np.array(Image.open("data/" + image_names[0]))
-plt.imshow(image_first)
-plt.show()
-print(image_first.shape)
+# plt.imshow(image_first)
+# plt.show()
+# print(image_first.shape)
 
 #use left and right cameras
 # with open(csv_file, 'r') as f:
