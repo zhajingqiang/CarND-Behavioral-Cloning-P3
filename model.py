@@ -42,7 +42,7 @@ steer_data = full_data['steering']
 image_first = np.array(Image.open("data/" + image_names[0]))
 train_samples, validation_samples = train_test_split(full_data, test_size=0.2)
 train_generator = generator(train_samples)
-valid_generator = generator(valid_samples)
+valid_generator = generator(validation_samples)
 
 # plt.imshow(image_first)
 # plt.show()
