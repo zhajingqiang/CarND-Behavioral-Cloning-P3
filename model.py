@@ -69,13 +69,13 @@ valid_generator = generator(validation_samples)
 #         car_images.extend(img_center, img_left, img_right)
 #         steering_angles.extend(steering_center, steering_left, steering_righ
 
-X_train = np.zeros((len(image_names)*2,image_first.shape[0],image_first.shape[1],image_first.shape[2]))
-y_train = np.zeros((len(image_names)*2,1))
-for i in range(len(image_names)): 
-	X_train[i*2] = np.array(Image.open("data/" + image_names[i]))
-	X_train[i*2+1] = np.array(np.fliplr(Image.open("data/" + image_names[i])))
-	y_train[i*2] = steer_data[i]
-	y_train[i*2+1] = -steer_data[i]
+# X_train = np.zeros((len(image_names)*2,image_first.shape[0],image_first.shape[1],image_first.shape[2]))
+# y_train = np.zeros((len(image_names)*2,1))
+# for i in range(len(image_names)): 
+# 	X_train[i*2] = np.array(Image.open("data/" + image_names[i]))
+# 	X_train[i*2+1] = np.array(np.fliplr(Image.open("data/" + image_names[i])))
+# 	y_train[i*2] = steer_data[i]
+# 	y_train[i*2+1] = -steer_data[i]
 
 # build architecture
 model = Sequential()
