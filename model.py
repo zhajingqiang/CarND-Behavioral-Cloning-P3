@@ -63,8 +63,8 @@ train_generator = generator(image_paths_train, steering_train)
 validation_generator = generator(image_paths_validation, steering_validation)
 
 image_first = np.array(Image.open("data/" + image_paths_train[0]))
-plt.imshow(image_first)
-plt.show()
+# plt.imshow(image_first)
+# plt.show()
 # print(image_first.shape)
 
 # for i in range(len(train_samples)):
