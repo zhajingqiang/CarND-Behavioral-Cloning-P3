@@ -140,7 +140,7 @@ model.add(Dense(1))
 
 model.compile(optimizer=Adam(lr=1e-4), loss='mse')
 # history = model.fit(X_train, y_train,  batch_size=32, nb_epoch=10, validation_split=0.2)
-history = model.fit_generator(train_generator, samples_per_epoch=len(image_paths_train), validation_data=validation_generator, nb_val_samples=len(image_paths_validation), nb_epoch=5)
+history = model.fit_generator(train_generator, samples_per_epoch=len(image_paths_train), validation_data=validation_generator, nb_val_samples=len(image_paths_validation), nb_epoch=15)
 model.save_weights('./model.h5')
 json_string = model.to_json()
 with open("model.json", "w") as json_file:
