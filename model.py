@@ -63,9 +63,10 @@ image_paths_train, image_paths_validation, steering_train,steering_validation = 
 train_generator = generator(image_paths_train, steering_train)
 validation_generator = generator(image_paths_validation, steering_validation)
 
-image_first = np.array(Image.open("data/" + image_paths_train[0]))
-# plt.imshow(image_first)
-# plt.show()
+image_first = np.array(Image.open("data/" + image_paths_train[100]))
+plt.imshow(image_first)
+plt.show()
+print(steering_train[100])
 # print(image_first.shape)
 
 # for i in range(len(train_samples)):
@@ -97,13 +98,6 @@ image_first = np.array(Image.open("data/" + image_paths_train[0]))
 #         car_images.extend(img_center, img_left, img_right)
 #         steering_angles.extend(steering_center, steering_left, steering_righ
 
-# X_train = np.zeros((len(image_names)*2,image_first.shape[0],image_first.shape[1],image_first.shape[2]))
-# y_train = np.zeros((len(image_names)*2,1))
-# for i in range(len(image_names)): 
-# 	X_train[i*2] = np.array(Image.open("data/" + image_names[i]))
-# 	X_train[i*2+1] = np.array(np.fliplr(Image.open("data/" + image_names[i])))
-# 	y_train[i*2] = steer_data[i]
-# 	y_train[i*2+1] = -steer_data[i]
 
 # build architecture
 model = Sequential()
@@ -127,20 +121,20 @@ model.add(MaxPooling2D((2, 2)))
 model.add(Dropout(0.5))
 model.add(Activation('relu'))
 model.add(Flatten())
-model.add(Dense(240))
+model.add(Dense(100))
 model.add(Dropout(0.5))
 model.add(Activation('relu'))
-model.add(Dense(120))
+model.add(Dense(50))
 model.add(Dropout(0.5))
 model.add(Activation('relu'))
-model.add(Dense(20))
+model.add(Dense(10))
 model.add(Dropout(0.5))
 model.add(Activation('relu'))
 model.add(Dense(1))
 
 model.compile(optimizer=Adam(lr=1e-4), loss='mse')
 # history = model.fit(X_train, y_train,  batch_size=32, nb_epoch=10, validation_split=0.2)
-history = model.fit_generator(train_generator, samples_per_epoch=len(image_paths_train)*2, validation_data=validation_generator, nb_val_samples=len(image_paths_validation), nb_epoch=10)
+history = model.fit_generator(train_generator, samples_per_epoch=len(image_paths_train)*2, validation_data=validation_generator, nb_val_samples=len(image_paths_validation)*2, nb_epoch=5)
 model.save_weights('./model.h5')
 json_string = model.to_json()
 with open("model.json", "w") as json_file:
