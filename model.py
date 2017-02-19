@@ -14,23 +14,24 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from PIL import Image
 # import tensorflow as tf 
-def generator(samples, batch_size=32):
-    num_samples = len(samples)
-    while 1: # Loop forever so the generator never terminates
-        shuffle(samples)
+def generator(image_paths, steering, batch_size=32):
+    num_samples = len(image_paths)
+    # Loop forever so the generator never terminates
+    while 1:
+        shuffle(image_paths,steering)
         for offset in range(0, num_samples, batch_size):
-            batch_samples = samples[offset:offset+batch_size]
-
+            batch_images = image_paths[offset:offset+batch_size]
+            batch_angles = steering[offset:offset+batch_size]
             images = []
             angles = []
-            for batch_sample in batch_samples:
-                name = 'data/'+batch_sample[0]
-                center_image = Image.open(name)
-                center_angle = float(batch_sample[3])
-                images.append(center_image)
-                angles.append(center_angle)
-
-            # trim image to only see section with road
+            for i in range(len(batch_images)):
+                name = 'data/'+batch_images[i]
+                image = cv2.cvtColor(cv2.imread(name),cv2.COLOR_BGR2RGB)
+                angle = float(batch_angles[i])
+                images.append(image)
+                images.append(np.fliplr(image))
+                angles.append(angle)
+                angles.append(-angle)
             X_train = np.array(images)
             y_train = np.array(angles)
             yield shuffle(X_train, y_train)
@@ -38,17 +39,42 @@ def generator(samples, batch_size=32):
 #read data 
 in_file = 'data/driving_log.csv'
 full_data = pd.read_csv(in_file)
-image_names = full_data['center']
-steer_data = full_data['steering']
-image_first = np.array(Image.open("data/" + image_names[0]))
-train_samples, validation_samples = train_test_split(full_data, test_size=0.2)
-train_generator = generator(train_samples)
-validation_generator = generator(validation_samples)
+# data shift setting
+image_paths = []
+steering_angle = []
+angle_shift = 0.22
+image_left = full_data['left']
+angle_left = full_data['steering'] + angle_shift
+image_center = full_data['center']
+angle_center = full_data['steering']
+image_right = full_data['right']
+angle_right = full_data['steering'] - angle_shift
 
-# plt.imshow(image_first)
-# plt.show()
+for i in range(len(image_center)):
+    image_paths.append(image_center[i])
+    steering_angle.append(angle_center[i])
+    image_paths.append(image_left[i].strip())
+    steering_angle.append(angle_left[i])
+    image_paths.append(image_right[i].strip())
+    steering_angle.append(angle_right[i])
+image_paths_train, image_paths_validation, steering_train,steering_validation = train_test_split(image_paths, steering_angle, test_size=0.2)
+
+train_generator = generator(image_paths_train, steering_train)
+validation_generator = generator(image_paths_validation, steering_validation)
+
+image_first = np.array(Image.open("data/" + image_paths_train[0]))
+plt.imshow(image_first)
+plt.show()
 # print(image_first.shape)
 
+# for i in range(len(train_samples)):
+#     image = train_samples['center']
+#     print(image[int(i)])
+    # name = 'data/'+train_samples['center'][i]
+    # center_image = cv2.cvtColor(cv2.imread(name),cv2.COLOR_BGR2RGB)
+    # center_angle = float(train_samples['steering'][i])
+    # images.append(center_image)
+    # angles.append(center_angle)
 #use left and right cameras
 # with open(csv_file, 'r') as f:
 #     reader = csv.reader(f)
@@ -113,7 +139,7 @@ model.add(Dense(1))
 
 model.compile(optimizer=Adam(lr=1e-4), loss='mse')
 # history = model.fit(X_train, y_train,  batch_size=32, nb_epoch=10, validation_split=0.2)
-history = model.fit_generator(train_generator, samples_per_epoch=len(train_samples), validation_data=validation_generator, nb_val_samples=len(validation_samples), nb_epoch=10)
+history = model.fit_generator(train_generator, samples_per_epoch=len(image_paths_train), validation_data=validation_generator, nb_val_samples=len(image_paths_validation), nb_epoch=10)
 model.save_weights('./model.h5')
 json_string = model.to_json()
 with open("model.json", "w") as json_file:
