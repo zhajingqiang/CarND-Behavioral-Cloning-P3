@@ -13,6 +13,7 @@ import cv2
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from PIL import Image
+from numpy import random
 # import tensorflow as tf 
 def generator(image_paths, steering, batch_size=32):
     num_samples = len(image_paths)
@@ -28,13 +29,15 @@ def generator(image_paths, steering, batch_size=32):
                 name = 'data/'+batch_images[i]
                 image = cv2.cvtColor(cv2.imread(name),cv2.COLOR_BGR2RGB)
                 angle = float(batch_angles[i])
-                images.append(image)
-                images.append(np.fliplr(image))
-                angles.append(angle)
-                angles.append(-angle)
+                flag = np.random.randint(2)
+                if flag ==0:
+                    images.append(image)
+                    angles.append(angle)
+                else:
+                    images.append(np.fliplr(image))
+                    angles.append(-angle)
             X_train = np.array(images)
             y_train = np.array(angles)
-            print(X_train.shape[0])
             yield shuffle(X_train, y_train)
 
 #read data 
@@ -101,7 +104,8 @@ image_first = np.array(Image.open("data/" + image_paths_train[100]))
 
 # build architecture
 model = Sequential()
-model.add(Lambda(lambda x: x/127.5 - 1.0,input_shape = image_first.shape))
+model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape = image_first.shape)))
+model.add(Lambda(lambda x: x/127.5 - 1.0))
 # Crop image
 # model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160,320,3)))
 model.add(Convolution2D(24,5,5))
@@ -134,7 +138,7 @@ model.add(Dense(1))
 
 model.compile(optimizer=Adam(lr=1e-4), loss='mse')
 # history = model.fit(X_train, y_train,  batch_size=32, nb_epoch=10, validation_split=0.2)
-history = model.fit_generator(train_generator, samples_per_epoch=len(image_paths_train)*2, validation_data=validation_generator, nb_val_samples=len(image_paths_validation)*2, nb_epoch=5)
+history = model.fit_generator(train_generator, samples_per_epoch=len(image_paths_train), validation_data=validation_generator, nb_val_samples=len(image_paths_validation), nb_epoch=5)
 model.save_weights('./model.h5')
 json_string = model.to_json()
 with open("model.json", "w") as json_file:
