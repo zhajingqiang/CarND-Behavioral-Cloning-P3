@@ -104,7 +104,7 @@ image_first = np.array(Image.open("data/" + image_paths_train[100]))
 
 # build architecture
 model = Sequential()
-model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape = image_first.shape)))
+model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape = image_first.shape))
 model.add(Lambda(lambda x: x/127.5 - 1.0))
 # Crop image
 # model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160,320,3)))
