@@ -102,19 +102,17 @@ image_validation = []
 for i in range(len(image_paths_train)):
     name = 'data/'+image_paths_train[i]
     image = cv2.cvtColor(cv2.imread(name),cv2.COLOR_BGR2RGB)
-    #add original data
-    images_augmentation.append(image)
-    steer_augmentation.append(steering_train[i])
-    # augment data
-    flag = np.random.randint(2)
-    if flag ==0:
-        image_shift,steer_shift = trans_image(image,steering_train[i],100)
-        image_processed = add_random_shadow(augment_brightness_camera_images(image_shift))
-    else:
-        image_shift,steer_shift = trans_image(np.fliplr(image),-steering_train[i],100)
-        image_processed = add_random_shadow(augment_brightness_camera_images(image_shift))
-    images_augmentation.append(image_processed)
-    steer_augmentation.append(steer_shift)
+    for j in range(2):
+        # augment data
+        flag = np.random.randint(2)
+        if flag ==0:
+            image_shift,steer_shift = trans_image(image,steering_train[i],100)
+            image_processed = add_random_shadow(augment_brightness_camera_images(image_shift))
+        else:
+            image_shift,steer_shift = trans_image(np.fliplr(image),-steering_train[i],100)
+            image_processed = add_random_shadow(augment_brightness_camera_images(image_shift))
+        images_augmentation.append(image_processed)
+        steer_augmentation.append(steer_shift)
 
 for i in range(len(image_paths_validation)):
     name = 'data/'+image_paths_validation[i]
@@ -164,7 +162,7 @@ image_first = np.array(Image.open("data/" + image_paths_validation[100]))
 
 # build architecture
 model = Sequential()
-model.add(Cropping2D(cropping=((60,20), (0,0)), input_shape = image_first.shape))
+model.add(Cropping2D(cropping=((70,20), (0,0)), input_shape = image_first.shape))
 model.add(Lambda(lambda x: x/127.5 - 1.0))
 # Crop image
 # model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160,320,3)))
@@ -176,7 +174,7 @@ model.add(Convolution2D(36,5,5))
 # model.add(Dropout(0.5))
 model.add(Convolution2D(48,5,5))
 model.add(MaxPooling2D((2, 2)))
-# model.add(Dropout(0.5))
+model.add(Dropout(0.5))
 model.add(Convolution2D(64,3,3))
 model.add(MaxPooling2D((2, 2)))
 model.add(Dropout(0.2))
@@ -198,7 +196,18 @@ model.add(Dense(1))
 
 model.compile(optimizer=Adam(lr=1e-4), loss='mse')
 # history = model.fit(X_train, y_train,  batch_size=32, nb_epoch=10, validation_split=0.2)
-history = model.fit_generator(train_generator, samples_per_epoch=len(images_augmentation), validation_data=validation_generator, nb_val_samples=len(image_validation), nb_epoch=10)
+history_object = model.fit_generator(train_generator, samples_per_epoch=len(images_augmentation), validation_data=validation_generator, nb_val_samples=len(image_validation), nb_epoch=6，verbose = 1)
+### print the keys contained in the history object
+print(history_object.history.keys())
+
+### plot the training and validation loss for each epoch
+plt.plot(history_object.history['loss'])
+plt.plot(history_object.history['val_loss'])
+plt.title('model mean squared error loss')
+plt.ylabel('mean squared error loss')
+plt.xlabel('epoch')
+plt.legend(['training set', 'validation set'], loc='upper right')
+plt.show()
 model.save_weights('./model.h5')
 json_string = model.to_json()
 with open("model.json", "w") as json_file:
