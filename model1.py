@@ -28,6 +28,7 @@ def augment_brightness_camera_images(image):
 
 def trans_image(image,steer,trans_range):
     # Translation
+    rows, cols, _ = image.shape
     tr_x = trans_range*np.random.uniform()-trans_range/2
     steer_ang = steer + tr_x/trans_range*2*.2
     tr_y = 40*np.random.uniform()-40/2
@@ -58,30 +59,18 @@ def add_random_shadow(image):
     image = cv2.cvtColor(image_hls,cv2.COLOR_HLS2RGB)
     return image
 
-def generator(image_paths, steering, batch_size=32):
-    num_samples = len(image_paths)
+def generator(images, steering, batch_size=32):
+    num_samples = len(images)
     # Loop forever so the generator never terminates
     while 1:
-        shuffle(image_paths,steering)
+        shuffle(images,steering)
         for offset in range(0, num_samples, batch_size):
-            batch_images = image_paths[offset:offset+batch_size]
+            batch_images = images[offset:offset+batch_size]
             batch_angles = steering[offset:offset+batch_size]
-            images = []
-            angles = []
-            for i in range(len(batch_images)):
-                name = 'data/'+batch_images[i]
-                image = cv2.cvtColor(cv2.imread(name),cv2.COLOR_BGR2RGB)
-                angle = float(batch_angles[i])
-                flag = np.random.randint(2)
-                if flag ==0:
-                    images.append(image)
-                    angles.append(angle)
-                else:
-                    images.append(np.fliplr(image))
-                    angles.append(-angle)
-            X_train = np.array(images)
-            y_train = np.array(angles)
+            X_train = np.array(batch_images)
+            y_train = np.array(batch_angles)
             yield shuffle(X_train, y_train)
+
 
 #read data 
 in_file = 'data/driving_log.csv'
@@ -104,10 +93,36 @@ for i in range(len(image_center)):
     steering_angle.append(angle_left[i])
     image_paths.append(image_right[i].strip())
     steering_angle.append(angle_right[i])
+
 image_paths_train, image_paths_validation, steering_train,steering_validation = train_test_split(image_paths, steering_angle, test_size=0.2)
 
-train_generator = generator(image_paths_train, steering_train)
-validation_generator = generator(image_paths_validation, steering_validation)
+images_augmentation = []
+steer_augmentation = []
+image_validation = []
+for i in range(len(image_paths_train)):
+    name = 'data/'+image_paths_train[i]
+    image = cv2.cvtColor(cv2.imread(name),cv2.COLOR_BGR2RGB)
+    #add original data
+    images_augmentation.append(image)
+    steer_augmentation.append(steering_train[i])
+    # augment data
+    flag = np.random.randint(2)
+    if flag ==0:
+        image_shift,steer_shift = trans_image(image,steering_train[i],100)
+        image_processed = add_random_shadow(augment_brightness_camera_images(image_shift))
+    else:
+        image_shift,steer_shift = trans_image(np.fliplr(image),-steering_train[i],100)
+        image_processed = add_random_shadow(augment_brightness_camera_images(image_shift))
+    images_augmentation.append(image_processed)
+    steer_augmentation.append(steer_shift)
+
+for i in range(len(image_paths_validation)):
+    name = 'data/'+image_paths_validation[i]
+    image_valid = cv2.cvtColor(cv2.imread(name),cv2.COLOR_BGR2RGB)
+    image_validation.append(image_valid)
+
+train_generator = generator(images_augmentation, steer_augmentation)
+validation_generator = generator(image_validation, steering_validation)
 
 image_first = np.array(Image.open("data/" + image_paths_validation[100]))
 # plt.imshow(image_first)
@@ -183,7 +198,7 @@ model.add(Dense(1))
 
 model.compile(optimizer=Adam(lr=1e-4), loss='mse')
 # history = model.fit(X_train, y_train,  batch_size=32, nb_epoch=10, validation_split=0.2)
-history = model.fit_generator(train_generator, samples_per_epoch=len(image_paths_train), validation_data=validation_generator, nb_val_samples=len(image_paths_validation), nb_epoch=15)
+history = model.fit_generator(train_generator, samples_per_epoch=len(images_augmentation), validation_data=validation_generator, nb_val_samples=len(image_validation), nb_epoch=10)
 model.save_weights('./model.h5')
 json_string = model.to_json()
 with open("model.json", "w") as json_file:
